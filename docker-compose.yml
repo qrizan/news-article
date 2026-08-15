@@ -1,0 +1,152 @@
+networks:
+  # Nama di-set eksplisit supaya tidak bergantung pada nama direktori project.
+  # Nilainya dirujuk oleh --providers.docker.network di service traefik; kalau
+  # nama itu meleset, Traefik salah pilih IP dan requestnya timeout.
+  edge:
+    name: news-article_edge
+  internal:
+    name: news-article_internal
+
+volumes:
+  mysql-data:
+  # Berkas yang diunggah lewat panel admin (gambar kategori & artikel).
+  # php-fpm menulisnya, nginx-api melayaninya: dua container berbeda yang
+  # masing-masing membawa salinan public/ sendiri dari hasil build, jadi tanpa
+  # volume ini berkasnya tidak pernah sampai ke yang melayani (404), dan hilang
+  # tiap `up -d --force-recreate php-fpm`.
+  uploads:
+
+services:
+  traefik:
+    image: traefik:v3.7
+    # unless-stopped, bukan always: menghormati `docker compose stop` yang
+    # disengaja dan tidak menyalakannya lagi setelah reboot.
+    #
+    # Bukan pencegahan teoretis: 2026-08-15 seluruh stack hilang setelah
+    # restart Docker daemon dan verify.sh melaporkan FAIL: 11. Default Compose
+    # adalah `no`, jadi tidak ada yang menyalakan ulang. Juga menutup kasus
+    # nginx-api yang mati kalau kalah balapan start dengan php-fpm.
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      # nginx-api punya IP di dua network (edge + internal). Tanpa baris ini
+      # Traefik tidak dijamin memilih yang benar. Kalau jatuh ke IP internal,
+      # Traefik tidak punya route ke subnet itu dan request menggantung sampai
+      # timeout (ERR:28), bukan ditolak. Terjadi nyata 2026-08-15 setelah
+      # `docker compose up -d` mengacak ulang alamat container.
+      #
+      # Di-set global, bukan lewat label traefik.docker.network di nginx-api,
+      # supaya service multi-network berikutnya tidak mengulang kegagalan yang
+      # sama tanpa ketahuan.
+      - --providers.docker.network=news-article_edge
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+      - ./certs:/etc/traefik/certs:ro
+    networks:
+      - edge
+
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: laravel
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  php-fpm:
+    build:
+      context: ../laravel-swagger-roles
+      target: php-fpm
+    restart: unless-stopped
+    env_file:
+      - ../laravel-swagger-roles/.env
+    volumes:
+      # Disk `local` Laravel berakar di storage/app, dan controller menyimpan
+      # gambar ke 'public/...', jadi inilah direktori yang harus dibagi.
+      # php-fpm sengaja jadi pihak yang me-mount ini lebih dulu (nginx-api
+      # depends_on php-fpm): saat volume masih kosong, Docker menyalin isi
+      # beserta kepemilikan dari image, sehingga volume terbentuk milik
+      # www-data, user yang menjalankan php-fpm. Kalau nginx-api yang duluan,
+      # volume terbentuk milik root dan php-fpm tidak bisa menulis.
+      - uploads:/var/www/html/storage/app/public
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - internal
+
+  nginx-api:
+    build:
+      context: ../laravel-swagger-roles
+      target: nginx
+    restart: unless-stopped
+    volumes:
+      # Titik yang dipakai asset('storage/...'), yang secara HTTP berarti
+      # /storage/... Read-only: nginx hanya melayani, tidak pernah menulis.
+      # Dengan mount ini `php artisan storage:link` tidak diperlukan, karena
+      # symlink di dalam container php-fpm tetap tidak terlihat dari sini.
+      - uploads:/var/www/html/public/storage:ro
+    depends_on:
+      - php-fpm
+    networks:
+      - edge
+      - internal
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.api.rule=Host(`api.localhost`)
+      - traefik.http.routers.api.entrypoints=websecure
+      - traefik.http.routers.api.tls=true
+      - traefik.http.services.api.loadbalancer.server.port=80
+
+  admin:
+    build:
+      context: ../react-tailwind-roles
+      args:
+        VITE_BASE_URL: https://api.localhost
+    restart: unless-stopped
+    networks:
+      - edge
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.admin.rule=Host(`admin.localhost`)
+      - traefik.http.routers.admin.entrypoints=websecure
+      - traefik.http.routers.admin.tls=true
+      - traefik.http.services.admin.loadbalancer.server.port=80
+
+  public:
+    build:
+      context: ../nextjs-tailwind-storybook
+      args:
+        # Semua pemakaian variabel ini ada di getServerSideProps, dieksekusi
+        # Node di dalam container, bukan di browser. Karena itu nilainya nama
+        # service Docker, bukan hostname publik: DNS internal Docker tidak
+        # mengenal api.localhost, dan memakainya menghasilkan ENOTFOUND saat SSR.
+        NEXT_PUBLIC_API_BACKEND: http://nginx-api
+    restart: unless-stopped
+    networks:
+      - edge
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.public.rule=Host(`news.localhost`)
+      - traefik.http.routers.public.entrypoints=websecure
+      - traefik.http.routers.public.tls=true
+      - traefik.http.services.public.loadbalancer.server.port=3000

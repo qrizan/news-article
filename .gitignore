@@ -1,0 +1,26 @@
+# Sertifikat TLS lokal beserta private key-nya, dibuat per mesin dengan:
+#   mkdir -p certs && cd certs && mkcert news.localhost admin.localhost api.localhost
+#
+# Private key tidak boleh masuk repo, dan sertifikatnya pun hanya berlaku untuk
+# CA lokal mesin yang membuatnya, jadi tidak ada gunanya dibagikan.
+certs/
+
+# Berkas workspace VSCode. Isinya path dan preferensi editor milik satu mesin,
+# jadi tidak berlaku untuk siapa pun yang meng-clone repo ini.
+news-article.code-workspace
+
+# Seluruh markdown sengaja belum di-commit sampai proyek selesai (keputusan
+# user, 2026-08-15). Isinya masih berubah cepat, dan commit-nya dilakukan
+# sekali di akhir setelah semuanya beres.
+#
+# Yang ikut ter-ignore: README.md, ARCHITECTURE.md, DECISION.md, PLAN.md,
+# PROGRESS.md, REPRODUCE.md, dan CLAUDE.md.
+#
+# HAPUS blok ini sebelum commit terakhir. Selama blok ini ada:
+#   - repo ini tidak bisa dipakai orang lain: tidak ada README, tidak ada
+#     penjelasan arsitektur, tidak ada langkah menjalankan;
+#   - instance Claude Code yang bekerja dari hasil clone mulai tanpa CLAUDE.md,
+#     jadi tanpa aturan kerja maupun catatan jebakan arsitektur;
+#   - dokumentasinya tidak punya riwayat, jadi tidak ada yang bisa dipulihkan
+#     kalau ada yang terhapus.
+*.md

@@ -1,0 +1,4 @@
+tls:
+  certificates:
+    - certFile: /etc/traefik/certs/news.localhost+2.pem
+      keyFile: /etc/traefik/certs/news.localhost+2-key.pem
