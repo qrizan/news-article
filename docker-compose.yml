@@ -18,7 +18,7 @@ volumes:
 
 services:
   traefik:
-    image: traefik:v3.7
+    image: traefik:v3.7@sha256:9c3b91d5fb7770853ca5c1124a23c34bf2d9b47ffaebeab2614cbaf410dcb2ac
     # unless-stopped, bukan always: menghormati `docker compose stop` yang
     # disengaja dan tidak menyalakannya lagi setelah reboot.
     #
@@ -57,7 +57,7 @@ services:
       - edge
 
   mysql:
-    image: mysql:8.4
+    image: mysql:8.4@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb
     restart: unless-stopped
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
