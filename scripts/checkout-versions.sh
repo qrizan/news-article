@@ -7,9 +7,9 @@ set -euo pipefail
 # commit ini, build berikutnya bisa memakai kode yang belum pernah diverifikasi
 # bersama commit di repo ini.
 declare -A PINNED=(
-  [laravel-swagger-roles]=005ebdb
-  [react-tailwind-roles]=d968dea
-  [nextjs-tailwind-storybook]=71bcc4f
+  [laravel-swagger-roles]=aca2646
+  [react-tailwind-roles]=a3096aa
+  [nextjs-tailwind-storybook]=aec205f
 )
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
