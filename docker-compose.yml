@@ -6,6 +6,12 @@ networks:
     name: news-article_edge
   internal:
     name: news-article_internal
+  # Network terpisah untuk stack observability (Prometheus/Loki/cAdvisor/
+  # Promtail/Grafana). Tidak dipublish ke host — Grafana satu-satunya yang
+  # perlu dijangkau lewat Traefik, jadi dual-homed (monitoring + edge),
+  # sama pola dengan nginx-api.
+  monitoring:
+    name: news-article_monitoring
 
 volumes:
   mysql-data:
@@ -15,6 +21,9 @@ volumes:
   # volume ini berkasnya tidak pernah sampai ke yang melayani (404), dan hilang
   # tiap `up -d --force-recreate php-fpm`.
   uploads:
+  prometheus-data:
+  loki-data:
+  grafana-data:
 
 services:
   traefik:
@@ -46,6 +55,17 @@ services:
       - --entrypoints.websecure.address=:443
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      # Endpoint metrics tidak masuk ports: di bawah - hanya bisa dijangkau dari network monitoring,
+      # sama prinsip isolasi yang dipakai internal.
+      - --metrics.prometheus=true
+      - --entrypoints.metrics.address=:8082
+      - --metrics.prometheus.entryPoint=metrics
+      # Default Traefik: --log.level=ERROR dan accesslog mati, jadi container
+      # tidak pernah menulis log sama sekali selama tidak ada error - promtail
+      # jadi tidak punya apa pun untuk ditarik. Ditemukan 2026-08-16 saat
+      # verifikasi pipeline logs kosong untuk container ini secara spesifik.
+      - --accesslog=true
+      - --log.level=INFO
     ports:
       - "80:80"
       - "443:443"
@@ -55,6 +75,7 @@ services:
       - ./certs:/etc/traefik/certs:ro
     networks:
       - edge
+      - monitoring
 
   mysql:
     image: mysql:8.4@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb
@@ -150,3 +171,62 @@ services:
       - traefik.http.routers.public.entrypoints=websecure
       - traefik.http.routers.public.tls=true
       - traefik.http.services.public.loadbalancer.server.port=3000
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1@sha256:3cde6faf0791ebf7b41d6f8ae7145466fed712ea6f252c935294d2608b1af388
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+    networks:
+      - monitoring
+
+  prometheus:
+    image: prom/prometheus:v3.0.1@sha256:565ee86501224ebbb98fc10b332fa54440b100469924003359edf49cbce374bd
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - monitoring
+
+  loki:
+    image: grafana/loki:3.2.1@sha256:09a53b4a4ff81ffcd8f13886df19d33fac7a8d3aaf952e3c7e66cbade5b2fc31
+    restart: unless-stopped
+    volumes:
+      - loki-data:/loki
+    networks:
+      - monitoring
+
+  promtail:
+    image: grafana/promtail:3.2.1@sha256:bf617e9d67e80247a59f717f9c1ad388d7d32dc0a1d29abd5799516d15e0a9b5
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ./monitoring/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - monitoring
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:11.3.1@sha256:fa801ab6e1ae035135309580891e09f7eb94d1abdbd2106bdc288030b028158c
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    networks:
+      - monitoring
+      - edge
+    depends_on:
+      - prometheus
+      - loki
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.grafana.rule=Host(`grafana.localhost`)
+      - traefik.http.routers.grafana.entrypoints=websecure
+      - traefik.http.routers.grafana.tls=true
+      - traefik.http.services.grafana.loadbalancer.server.port=3000

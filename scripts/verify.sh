@@ -78,12 +78,12 @@ fi
 section "1. Sertifikat TLS lokal"
 
 # certs/ di-gitignore. Environment baru wajib generate sendiri:
-#   mkdir -p certs && cd certs && mkcert news.localhost admin.localhost api.localhost
-for f in certs/news.localhost+2.pem certs/news.localhost+2-key.pem; do
+#   mkdir -p certs && cd certs && mkcert news.localhost admin.localhost api.localhost grafana.localhost
+for f in certs/news.localhost+3.pem certs/news.localhost+3-key.pem; do
     if [ -f "$f" ]; then
         pass "$f ada"
     else
-        fail "$f tidak ada - jalankan: mkdir -p certs && cd certs && mkcert news.localhost admin.localhost api.localhost"
+        fail "$f tidak ada - jalankan: mkdir -p certs && cd certs && mkcert news.localhost admin.localhost api.localhost grafana.localhost"
     fi
 done
 
