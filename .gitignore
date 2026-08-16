@@ -9,18 +9,24 @@ certs/
 # jadi tidak berlaku untuk siapa pun yang meng-clone repo ini.
 news-article.code-workspace
 
-# Seluruh markdown sengaja belum di-commit sampai proyek selesai (keputusan
-# user, 2026-08-15). Isinya masih berubah cepat, dan commit-nya dilakukan
-# sekali di akhir setelah semuanya beres.
+# Dokumentasi kerja internal sengaja belum di-commit sampai proyek selesai
+# (keputusan user, 2026-08-15). Isinya masih berubah cepat, dan commit-nya
+# dilakukan sekali di akhir setelah semuanya beres.
 #
-# Yang ikut ter-ignore: README.md, ARCHITECTURE.md, DECISION.md, PLAN.md,
-# PROGRESS.md, REPRODUCE.md, dan CLAUDE.md.
+# Yang ikut ter-ignore: PLAN.md, PROGRESS.md, REPRODUCE.md, dan CLAUDE.md.
 #
-# HAPUS blok ini sebelum commit terakhir. Selama blok ini ada:
-#   - repo ini tidak bisa dipakai orang lain: tidak ada README, tidak ada
-#     penjelasan arsitektur, tidak ada langkah menjalankan;
+# README.md, ARCHITECTURE.md, DECISION.md, dan SECURITY.md dikecualikan
+# (lihat baris !*.md di bawah) karena keempatnya dokumentasi publik,
+# dipush lebih awal.
+#
+# HAPUS blok ini sebelum commit terakhir dari sisa dokumen internal. Selama
+# blok ini ada:
 #   - instance Claude Code yang bekerja dari hasil clone mulai tanpa CLAUDE.md,
 #     jadi tanpa aturan kerja maupun catatan jebakan arsitektur;
-#   - dokumentasinya tidak punya riwayat, jadi tidak ada yang bisa dipulihkan
-#     kalau ada yang terhapus.
+#   - dokumentasi internal tidak punya riwayat, jadi tidak ada yang bisa
+#     dipulihkan kalau ada yang terhapus.
 *.md
+!README.md
+!ARCHITECTURE.md
+!DECISION.md
+!SECURITY.md
