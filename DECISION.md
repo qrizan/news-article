@@ -153,3 +153,9 @@ Catatan keputusan penting terkait orkestrasi. Tidak semua keputusan dicatat di s
 **Context**: default Traefik adalah `--log.level=ERROR` dan `--accesslog` mati, container tidak menulis satu baris log pun kecuali ada error. Ditemukan saat verifikasi pipeline `promtail` ke `loki`: Traefik satu-satunya container yang tidak muncul di Loki, dan log container-nya terbukti kosong total.
 **Decision**: tambah `--accesslog=true` dan `--log.level=INFO` ke `command:` service `traefik`.
 **Trade-off**: log Traefik jadi jauh lebih berisik (tiap request tercatat, plus log operasional level INFO) dibanding default yang hanya mencatat error. Trade-off ini diterima karena Traefik adalah satu-satunya titik masuk semua request, tanpa access log dia jadi satu-satunya service tanpa visibilitas sama sekali, bertentangan dengan tujuan observability itu sendiri.
+
+### Panel Network I/O per container di-drop, bukan grant `privileged: true` ke cAdvisor
+
+**Context**: cAdvisor bisa memecah metrik network per container, tapi butuh `privileged: true` (akses penuh ke device/namespace host). Mount default (`docker.sock:ro`, `/sys:ro`, `/var/lib/docker:ro`) tidak cukup; percobaan tambahan `/:/rootfs:ro` juga tidak menolong. Tanpa `privileged`, metrik network yang tersedia cuma agregat host (`id: "/"`), bukan per container.
+**Decision**: panel "Network I/O per container" tidak dibuat. `privileged: true` tidak digunakan.
+**Trade-off**: satu panel USE (network) hilang dari dashboard, dicatat sebagai batasan terbuka di MONITORING.md §4. Sebagai gantinya, `cadvisor` tetap berjalan dengan akses read-only minimum yang sudah ada, tidak menambah attack surface baru demi satu panel observability yang tidak kritis.

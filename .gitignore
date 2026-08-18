@@ -9,15 +9,18 @@ certs/
 # jadi tidak berlaku untuk siapa pun yang meng-clone repo ini.
 news-article.code-workspace
 
+# Sisa output dari percobaan gagal, bukan bagian dari repo.
+run-failed.txt
+
 # Dokumentasi kerja internal sengaja belum di-commit sampai proyek selesai
 # (keputusan user, 2026-08-15). Isinya masih berubah cepat, dan commit-nya
 # dilakukan sekali di akhir setelah semuanya beres.
 #
 # Yang ikut ter-ignore: PLAN.md, PROGRESS.md, REPRODUCE.md, dan CLAUDE.md.
 #
-# README.md, ARCHITECTURE.md, DECISION.md, dan SECURITY.md dikecualikan
-# (lihat baris !*.md di bawah) karena keempatnya dokumentasi publik,
-# dipush lebih awal.
+# README.md, ARCHITECTURE.md, DECISION.md, SECURITY.md, dan MONITORING.md
+# dikecualikan (lihat baris !*.md di bawah) karena kelimanya dokumentasi
+# publik, dipush lebih awal.
 #
 # HAPUS blok ini sebelum commit terakhir dari sisa dokumen internal. Selama
 # blok ini ada:
@@ -30,3 +33,4 @@ news-article.code-workspace
 !ARCHITECTURE.md
 !DECISION.md
 !SECURITY.md
+!MONITORING.md

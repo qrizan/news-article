@@ -15,14 +15,19 @@ news-article/
 │   └── dynamic/
 │       └── tls.yml                                         sertifikat TLS untuk Traefik
 ├── monitoring/
-│   ├── prometheus.yml                                      scrape config
+│   ├── prometheus.yml                                      scrape config, filter cadvisor ke container proyek ini
 │   ├── promtail-config.yml                                 docker log discovery
-│   └── grafana/provisioning/datasources/datasources.yml    datasource Prometheus + Loki otomatis
+│   └── grafana/provisioning/
+│       ├── datasources/datasources.yml                     datasource Prometheus + Loki otomatis
+│       └── dashboards/                                     provider + dashboard "Orchestration overview" otomatis
 ├── scripts/
 │   ├── checkout-versions.sh                                pin versi sibling repo
-│   └── verify.sh                                           verifikasi read-only
+│   ├── verify.sh                                            verifikasi read-only
+│   └── generate-traffic.sh                                 generator traffic HTTP untuk demo monitoring
 └── certs/                                                   sertifikat TLS lokal, gitignored, digenerate per mesin
 ```
+
+Dashboard dan query PromQL yang dipakai ada di [MONITORING.md](MONITORING.md).
 
 Kode aplikasi ada di tiga repo sibling, bukan di sini (lihat README.md bagian 1).
 
@@ -135,7 +140,7 @@ Karena itu URL dipaksa berakar di `APP_URL` lewat `URL::forceRootUrl()` di `AppS
 | `prometheus` | `prom/prometheus:v3.0.1` | Scrape dan simpan metrics dari `traefik` + `cadvisor` | `monitoring` |
 | `loki` | `grafana/loki:3.2.1` | Simpan log dari seluruh container | `monitoring` |
 | `promtail` | `grafana/promtail:3.2.1` | Tarik `docker logs` semua container, kirim ke `loki` | `monitoring` |
-| `grafana` | `grafana/grafana:11.3.1` | Dashboard, datasource Prometheus + Loki ter-provision otomatis | `monitoring` + `edge` |
+| `grafana` | `grafana/grafana:11.3.1` | Dashboard, datasource dan dashboard "Orchestration overview" ter-provision otomatis | `monitoring` + `edge` |
 
 Repo `news-article` tidak berisi kode aplikasi, tiap `build.context` di `docker-compose.yml` menunjuk ke repo sibling (`../laravel-swagger-roles`, `../react-tailwind-roles`, `../nextjs-tailwind-storybook`). Kelima service observability memakai image resmi langsung (bukan `build.context`), semuanya dipin ke digest manifest-list.
 

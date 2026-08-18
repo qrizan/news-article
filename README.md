@@ -102,6 +102,8 @@ Butir terakhir menembus seluruh lapisan sekaligus: gambar artikel ditulis oleh c
 
 ![Loki menampilkan log nyata dari container traefik](screenshots/screenshot-2.png)
 
+- Dashboard Grafana terbentuk dari metrics dan log itu, bukan cuma datasource yang ter-provision, panel dan PromQL yang dipakai ada di [MONITORING.md](MONITORING.md)
+
 ---
 
 ## 4. Running from scratch
@@ -252,6 +254,7 @@ Berkas berikut bukan bacaan wajib untuk memahami proyek ini, dibuka sesuai kebut
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Detail teknis bentuk sistem, lebih dalam dari bagian 2 |
 | [DECISION.md](DECISION.md) | Kenapa sesuatu diputuskan begitu, bukan cara lain |
 | [SECURITY.md](SECURITY.md) | Mekanisme pemeriksaan keamanan otomatis, tool per lapisan, kebijakan gating, keterbatasan yang diketahui |
+| [MONITORING.md](MONITORING.md) | Panel dashboard Grafana, metrik dan PromQL yang dipakai, keterbatasan monitoring saat ini |
 
 ---
 

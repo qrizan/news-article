@@ -9,3 +9,7 @@ scrape_configs:
   - job_name: cadvisor
     static_configs:
       - targets: ["cadvisor:8080"]
+    metric_relabel_configs:
+      - source_labels: [name]
+        regex: "news-article-.*"
+        action: keep
