@@ -198,7 +198,7 @@ services:
       - monitoring
 
   loki:
-    image: grafana/loki:3.2.1@sha256:09a53b4a4ff81ffcd8f13886df19d33fac7a8d3aaf952e3c7e66cbade5b2fc31
+    image: grafana/loki:3.7.6@sha256:efd47c67f9bac88ca29bcf8cb997d9ab29d1848bd0aff579282295542a745952
     restart: unless-stopped
     volumes:
       - loki-data:/loki
