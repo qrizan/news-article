@@ -10,9 +10,9 @@ Ada tiga aplikasi yang sebelumnya berdiri sendiri-sendiri:
 
 | Aplikasi | Isinya |
 |---|---|
-| `laravel-swagger-roles` | API. Menyimpan artikel, user, dan hak akses. |
-| `react-tailwind-roles` | Panel admin. Tempat mengelola user dan artikel. |
-| `nextjs-tailwind-storybook` | Situs publik. Tempat pembaca membaca artikel. |
+| [`laravel-swagger-roles`](https://github.com/qrizan/laravel-swagger-roles) | API. Menyimpan artikel, user, dan hak akses. |
+| [`react-tailwind-roles`](https://github.com/qrizan/react-tailwind-roles) | Panel admin. Tempat mengelola user dan artikel. |
+| [`nextjs-tailwind-storybook`](https://github.com/qrizan/nextjs-tailwind-storybook) | Situs publik. Tempat pembaca membaca artikel. |
 
 Ketiganya jalan terpisah di laptop, di port masing-masing, dan tidak saling terhubung.
 
