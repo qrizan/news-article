@@ -1,5 +1,5 @@
 # Sertifikat TLS lokal beserta private key-nya, dibuat per mesin dengan:
-#   mkdir -p certs && cd certs && mkcert news.localhost admin.localhost api.localhost
+#   mkdir -p certs && cd certs && mkcert news.localhost admin.localhost api.localhost grafana.localhost
 #
 # Private key tidak boleh masuk repo, dan sertifikatnya pun hanya berlaku untuk
 # CA lokal mesin yang membuatnya, jadi tidak ada gunanya dibagikan.
@@ -18,9 +18,9 @@ run-failed.txt
 #
 # Yang ikut ter-ignore: PLAN.md, PROGRESS.md, REPRODUCE.md, dan CLAUDE.md.
 #
-# README.md, ARCHITECTURE.md, DECISION.md, SECURITY.md, dan MONITORING.md
-# dikecualikan (lihat baris !*.md di bawah) karena kelimanya dokumentasi
-# publik, dipush lebih awal.
+# README.md, ARCHITECTURE.md, DECISION.md, SECURITY.md, MONITORING.md, dan
+# DEPLOYMENT.md dikecualikan (lihat baris !*.md di bawah) karena keenamnya
+# dokumentasi publik, dipush lebih awal.
 #
 # HAPUS blok ini sebelum commit terakhir dari sisa dokumen internal. Selama
 # blok ini ada:
@@ -34,3 +34,4 @@ run-failed.txt
 !DECISION.md
 !SECURITY.md
 !MONITORING.md
+!DEPLOYMENT.md
