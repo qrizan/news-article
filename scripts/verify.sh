@@ -97,7 +97,7 @@ fi
 
 section "3. Container"
 
-SERVICES="traefik mysql php-fpm nginx-api admin public"
+SERVICES="traefik mysql php-fpm nginx-api admin public cadvisor prometheus loki promtail grafana"
 
 for svc in $SERVICES; do
     # -a supaya container yang ada tapi mati tetap terlihat. Tanpa ini,
@@ -143,12 +143,14 @@ section "5. TLS + routing per domain"
 CODE_ADMIN=$(http_code https://admin.localhost)
 CODE_NEWS=$(http_code https://news.localhost)
 CODE_API=$(http_code https://api.localhost)
+CODE_GRAFANA=$(http_code https://grafana.localhost)
 
 code_of() {
     case "$1" in
-        admin.localhost) printf '%s' "$CODE_ADMIN" ;;
-        news.localhost)  printf '%s' "$CODE_NEWS" ;;
-        api.localhost)   printf '%s' "$CODE_API" ;;
+        admin.localhost)   printf '%s' "$CODE_ADMIN" ;;
+        news.localhost)    printf '%s' "$CODE_NEWS" ;;
+        api.localhost)     printf '%s' "$CODE_API" ;;
+        grafana.localhost) printf '%s' "$CODE_GRAFANA" ;;
     esac
 }
 
@@ -160,7 +162,7 @@ code_of() {
 # dinilai di sini: dari kode saja tidak mungkin dibedakan 404 dari Traefik
 # (router hilang) dan 404 dari aplikasi (route tidak ada). Penilaian
 # "aplikasi benar-benar jalan" adalah tugas bagian 6.
-for host in admin.localhost news.localhost api.localhost; do
+for host in admin.localhost news.localhost api.localhost grafana.localhost; do
     code=$(code_of "$host")
     case "$code" in
         ERR:60)
@@ -178,23 +180,30 @@ done
 section "6. Status aplikasi end-to-end"
 
 # Ini bagian yang membedakan "routing jalan" dari "aplikasi jalan".
-# Yang sudah pernah terbukti 200 diperlakukan WAJIB - kalau turun, regresi.
-#   admin : terverifikasi 
-#   api   : terverifikasi (setelah APP_KEY/JWT_SECRET diisi)
-#   news  : terverifikasi (setelah SSR diarahkan ke http://nginx-api)
 check_app() {
-    local host="$1" label="$2" since="$3" code
+    local host="$1" label="$2" code
     code=$(code_of "$host")
     if [ "$code" = "200" ]; then
         pass "$host -> 200 ($label)"
     else
-        fail "$host -> $code (diharapkan 200 - pernah terverifikasi $since)"
+        fail "$host -> $code (diharapkan 200)"
     fi
 }
 
-check_app admin.localhost "React SPA"      2026-08-14
-check_app api.localhost   "Laravel API"    2026-08-15
-check_app news.localhost  "Next.js SSR"    2026-08-15
+check_app admin.localhost "React SPA"
+check_app api.localhost   "Laravel API"
+check_app news.localhost  "Next.js SSR"
+
+# Grafana bukan dicek lewat root: tanpa sesi login, root me-redirect 302 ke
+# /login, itu perilaku normal Grafana, bukan kegagalan. /api/health adalah
+# endpoint liveness resminya, selalu 200 tanpa autentikasi kalau Grafana benar
+# jalan dan bisa membaca database internalnya sendiri.
+CODE_GRAFANA_HEALTH=$(http_code_get https://grafana.localhost/api/health)
+if [ "$CODE_GRAFANA_HEALTH" = "200" ]; then
+    pass "grafana.localhost/api/health -> 200 (Grafana dashboard)"
+else
+    fail "grafana.localhost/api/health -> $CODE_GRAFANA_HEALTH (diharapkan 200)"
+fi
 
 section "7. API menjawab di endpoint data"
 
