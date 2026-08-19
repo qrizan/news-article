@@ -97,6 +97,12 @@ services:
     build:
       context: ../laravel-swagger-roles
       target: php-fpm
+      args:
+        # Diambil dari environment shell saat `docker compose build` dijalankan
+        # (manual maupun dari workflow CD) - lihat CD.md untuk cara mengisinya.
+        # Kosong berarti composer install jalan anonim seperti sebelumnya,
+        # dengan risiko rate limit di codeload.github.com (HTTP 429).
+        COMPOSER_AUTH: ${COMPOSER_AUTH:-}
     restart: unless-stopped
     env_file:
       - ../laravel-swagger-roles/.env
