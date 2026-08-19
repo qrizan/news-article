@@ -94,6 +94,7 @@ Dibuktikan dengan perintah nyata, dapat diulang kapan saja (caranya di bagian 5)
 
 Butir terakhir menembus seluruh lapisan sekaligus: gambar artikel ditulis oleh container `php-fpm`, dilayani oleh container `nginx-api` yang berbeda, dirender oleh situs publik lewat panggilan internal antar-container, lalu dimuat browser lewat Traefik dengan TLS. Satu mata rantai putus, gambarnya tidak tampil.
 
+- Sistem bisa direset total (`docker compose down -v`) lalu dibangun ulang dan diverifikasi otomatis (`scripts/bootstrap.sh` + `scripts/verify.sh`), tanpa langkah manual, aman diulang berkali-kali
 - Database benar-benar tertutup dari jaringan luar, bukan sekadar dikonfigurasi
 - Versi tiap komponen dipin (repo aplikasi ke commit, image dasar ke digest), dibuktikan dengan build ulang dari cache kosong yang tetap menghasilkan hasil yang sama
 - Metrics dan log terkumpul nyata, bukan cuma servicenya menyala: Prometheus terbukti berhasil scrape Traefik dan tiap container, dan Loki terbukti menerima log dari seluruh container
@@ -103,6 +104,7 @@ Butir terakhir menembus seluruh lapisan sekaligus: gambar artikel ditulis oleh c
 ![Loki menampilkan log nyata dari container traefik](screenshots/screenshot-2.png)
 
 - Dashboard Grafana terbentuk dari metrics dan log itu, bukan cuma datasource yang ter-provision, panel dan PromQL yang dipakai ada di [MONITORING.md](MONITORING.md)
+- Push ke `main` di `laravel-swagger-roles` (API) memicu build dan redeploy otomatis tanpa intervensi manual, dibuktikan lewat run nyata, bukan cuma konfigurasi yang ada, detail di [DEPLOYMENT.md](DEPLOYMENT.md)
 
 ---
 
@@ -130,13 +132,15 @@ git clone git@github.com:qrizan/react-tailwind-roles.git
 git clone git@github.com:qrizan/nextjs-tailwind-storybook.git
 ```
 
-Lalu pin ketiganya ke commit yang sudah terbukti bekerja bersama:
+Lalu pin dua repo frontend ke commit yang sudah terbukti bekerja bersama:
 
 ```bash
 bash scripts/checkout-versions.sh
 ```
 
-Hasil yang diharapkan: tiga baris `[PASS]`, masing-masing dengan SHA commit yang di-checkout. Kalau ada `[FAIL]` karena salah satu repo punya perubahan belum di-commit, checkout-nya dilewati supaya tidak ada yang hilang, commit atau stash dulu perubahan itu, lalu ulangi.
+Hasil yang diharapkan: dua baris `[PASS]` (`react-tailwind-roles`, `nextjs-tailwind-storybook`), masing-masing dengan SHA commit yang di-checkout. Kalau ada `[FAIL]` karena salah satu repo punya perubahan belum di-commit, checkout-nya dilewati supaya tidak ada yang hilang, commit atau stash dulu perubahan itu, lalu ulangi.
+
+`laravel-swagger-roles` sengaja tidak ikut dipin di sini, repo itu dikelola live oleh CD, jadi cukup di-clone pada commit `main` terbaru. Detail di [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ### Step 1 - buat sertifikat HTTPS lokal
 
@@ -196,11 +200,10 @@ docker compose up -d --force-recreate php-fpm
 ### Step 5 - isi database
 
 ```bash
-docker compose run --rm php-fpm php artisan migrate --force
-docker compose run --rm php-fpm php artisan db:seed --force
+bash scripts/bootstrap.sh
 ```
 
-Hasil yang diharapkan: tujuh migration `DONE`, lalu seeder membuat role, permission, dan satu akun administrator.
+Hasil yang diharapkan: tujuh migration `DONE`, lalu seeder membuat role, permission, dan satu akun administrator. Aman dijalankan ulang kapan saja: migration yang sudah jalan dilewati otomatis, dan seeder cuma dipanggil kalau database masih kosong.
 
 Akun yang terbentuk (didefinisikan di `database/seeders/UserTableSeeder.php`):
 
@@ -218,6 +221,16 @@ Ada satu script yang memeriksa ulang seluruh klaim di bagian 3, tanpa mengubah a
 ```bash
 bash scripts/verify.sh
 ```
+
+Untuk menguji ulang dari kondisi benar-benar bersih, bukan cuma memeriksa keadaan yang sedang berjalan:
+
+```bash
+docker compose down -v
+bash scripts/bootstrap.sh
+bash scripts/verify.sh
+```
+
+`down -v` menghapus seluruh volume (database, upload, data monitoring). `bootstrap.sh` membangun ulang database dari kosong sampai siap (lihat Step 5). Satu siklus, aman diulang berkali-kali.
 
 Script itu memeriksa: perkakas yang dibutuhkan ada, sertifikat ada, konfigurasi compose sah, enam container menyala, pengalihan `http` ke `https` bekerja, sertifikat ketiga alamat dipercaya, ketiga aplikasi menjawab `200`, API menjawab di endpoint datanya, URL yang dikeluarkan API berakar di `https://api.localhost`, gambar unggahan benar-benar dilayani, dan database tidak bisa dijangkau dari jaringan luar.
 
@@ -255,33 +268,4 @@ Berkas berikut bukan bacaan wajib untuk memahami proyek ini, dibuka sesuai kebut
 | [DECISION.md](DECISION.md) | Kenapa sesuatu diputuskan begitu, bukan cara lain |
 | [SECURITY.md](SECURITY.md) | Mekanisme pemeriksaan keamanan otomatis, tool per lapisan, kebijakan gating, keterbatasan yang diketahui |
 | [MONITORING.md](MONITORING.md) | Panel dashboard Grafana, metrik dan PromQL yang dipakai, keterbatasan monitoring saat ini |
-
----
-
-## 8. Glossary
-
-Istilah teknis yang dipakai di seluruh dokumen ini beserta dokumen lain di repo.
-
-| Istilah | Arti |
-|---|---|
-| Container | Proses terisolasi yang menjalankan satu service (mis. `mysql`, `php-fpm`), dibuat dari image |
-| Image | Paket berisi aplikasi beserta seluruh dependensinya, dipakai untuk membuat container |
-| Volume | Ruang penyimpanan Docker yang bertahan di luar siklus hidup container, dipakai untuk data yang tidak boleh hilang saat container dibuat ulang |
-| Network (Docker) | Jaringan virtual yang menghubungkan container; dua container hanya bisa saling menjangkau kalau berbagi minimal satu network |
-| Reverse proxy | Service di depan beberapa aplikasi yang meneruskan permintaan sesuai alamat yang diminta; peran ini dipegang Traefik di sistem ini |
-| TLS termination | Titik tempat enkripsi HTTPS dibuka; di sistem ini terjadi di Traefik, bukan di aplikasi masing-masing |
-| Routing host-based | Traefik meneruskan permintaan ke aplikasi berdasarkan nama domain yang diminta (`news.localhost`, `admin.localhost`, dst.) |
-| DNS resolution | Proses menerjemahkan nama domain jadi alamat tujuan; berbeda hasilnya kalau dilakukan dari browser (host) dibanding dari dalam container |
-| SSR (server-side rendering) | Halaman dirender di server sebelum dikirim ke browser; dipakai situs publik (Next.js) untuk mengambil data artikel |
-| Build context / build arg | `build.context` menunjuk folder sumber kode yang dipakai `docker build`; `build.arg` adalah nilai yang disuntikkan ke proses build, dipakai di sini untuk alamat API yang di-inline ke bundle `admin`/`public` |
-| Digest (image digest) | Identitas image berbasis hash konten, dipakai untuk mengunci versi base image supaya tidak berubah walau tag yang sama di-build ulang di kemudian hari |
-| Sidecar | Container pendamping yang melengkapi container utama; `nginx-api` adalah sidecar untuk `php-fpm` |
-| Docker socket | Antarmuka yang dipakai untuk berbicara dengan Docker daemon; akses baca ke sini setara akses luas ke host |
-| CI/CD pipeline | Rangkaian otomatis yang berjalan tiap ada perubahan kode (build, test, scan keamanan); di sistem ini berhenti di scan, tidak ada tahap deploy |
-| SCA (software composition analysis) | Pemindaian dependency pihak ketiga untuk mencari versi dengan celah keamanan yang sudah diketahui |
-| SAST (static application security testing) | Analisis kode sumber untuk mencari pola kerentanan, tanpa menjalankan aplikasinya |
-| DAST (dynamic application security testing) | Pengujian keamanan terhadap aplikasi yang sedang berjalan; tidak dipakai di sistem ini |
-| CVE | Nomor identitas standar untuk satu celah keamanan yang sudah didaftarkan publik |
-| Severity gate | Ambang tingkat keparahan temuan yang membuat pipeline CI gagal; di sistem ini disetel ke `CRITICAL` |
-| Observability | Kemampuan mengamati kondisi sistem dari luar lewat tiga jenis data: metrics (angka), logs (catatan kejadian), dan traces (jejak satu permintaan lintas layanan) |
-| Dual-homed | Satu container yang berdiri di dua network sekaligus, dipakai sebagai jembatan antar network yang terisolasi |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | Mekanisme continuous deployment, self-hosted runner, alur branch-PR-merge, keterbatasan yang diketahui |

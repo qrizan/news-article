@@ -23,6 +23,7 @@ news-article/
 ├── scripts/
 │   ├── checkout-versions.sh                                pin versi sibling repo
 │   ├── verify.sh                                            verifikasi read-only
+│   ├── bootstrap.sh                                        migrate + seed database, idempoten
 │   └── generate-traffic.sh                                 generator traffic HTTP untuk demo monitoring
 └── certs/                                                   sertifikat TLS lokal, gitignored, digenerate per mesin
 ```
@@ -205,4 +206,4 @@ Penanda `[INFO]` tidak dihitung gagal dan dipakai untuk dua hal: pernyataan bata
 
 Batas yang perlu disadari saat membaca hasilnya: script ini memeriksa klaim yang bisa diperiksa tanpa mengubah keadaan. Yang tidak bisa diperiksa adalah tindakan yang mengubah keadaan: login dan pembuatan kategori/artikel. Langkahnya manual, ada di README.md bagian 5.
 
-Untuk membangun stack dari nol, lihat [README.md](README.md) bagian 4.
+Untuk membangun stack dari nol, lihat [README.md](README.md) bagian 4. Untuk mekanisme deploy otomatis (CD), lihat [DEPLOYMENT.md](DEPLOYMENT.md).

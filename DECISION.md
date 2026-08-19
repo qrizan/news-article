@@ -78,7 +78,7 @@ Catatan keputusan penting terkait orkestrasi. Tidak semua keputusan dicatat di s
 
 **Context**: trade-off antara kemudahan (auto-run tiap `docker compose up`) vs kontrol dan risiko (migration race kalau di-scale lebih dari satu replika, efek samping tidak disengaja tiap restart).
 **Decision**: seluruh langkah ini manual (`docker compose run --rm php-fpm php artisan ...`), bukan bagian dari `CMD`/entrypoint image.
-**Trade-off**: ada satu langkah manual tambahan tiap kali environment baru disiapkan dari nol, tapi lebih predictable dan aman untuk didemokan sebagai langkah eksplisit, bukan efek samping tersembunyi.
+**Trade-off**: ada satu langkah manual tambahan tiap kali environment baru disiapkan dari nol, tapi lebih predictable dan aman untuk didemokan sebagai langkah eksplisit, bukan efek samping tersembunyi. `scripts/bootstrap.sh` membungkus `migrate`+`db:seed` jadi satu perintah yang aman diulang (`db:seed` dilewati kalau database sudah terisi, karena seeder-nya tidak idempoten), tapi tetap dipanggil eksplisit oleh manusia, bukan bagian dari `CMD`/entrypoint — trade-off ini tidak berubah, cuma langkah manualnya jadi satu perintah alih-alih dua.
 
 ### Unblock sementara advisory Composer untuk Laravel 10 (EOL)
 
@@ -125,6 +125,8 @@ Catatan keputusan penting terkait orkestrasi. Tidak semua keputusan dicatat di s
 **Context**: `build.context` di `docker-compose.yml` menunjuk folder tetangga apa adanya, tanpa jejak versi, build hari ini dan build nanti bisa memakai kode berbeda tanpa ada yang tahu. Tiga alternatif dipertimbangkan: (a) git submodule, mekanisme native git untuk memin repo lain ke commit tertentu; (b) `build.context` diarahkan ke git URL berpin (`https://github.com/.../repo.git#sha`); (c) script yang men-checkout tiap sibling repo ke SHA yang sudah tercatat.
 **Decision**: opsi (c), `scripts/checkout-versions.sh`, dijalankan manual sebelum `docker compose build`.
 **Trade-off**: submodule ditolak karena mengharuskan ketiga repo pindah ke dalam `news-article/` (nested), membatalkan layout sejajar yang sudah jadi keputusan sadar. Git URL berpin ditolak karena mengubah `build.context` jadi selalu menarik dari remote, sehingga kode lokal yang belum di-commit tidak pernah ikut ter-build. Script checkout mempertahankan keduanya (layout sejajar, build dari folder lokal) dengan harga: pin-nya cuma berlaku kalau script benar-benar dijalankan, tidak dipaksakan oleh Docker sendiri seperti opsi (b). Solusi yang lebih penuh untuk reproducibility, yaitu image immutable di registry dirujuk lewat digest, sengaja tidak dikerjakan karena proyek ini lokal-saja tanpa VPS.
+
+**Pengecualian**: `laravel-swagger-roles` dikeluarkan dari script ini setelah CD berjalan untuk repo itu (lihat [DEPLOYMENT.md](DEPLOYMENT.md)). Direktorinya sekarang dikelola live oleh CD, selalu mengikuti `main` terbaru, memin-nya ke SHA lama di script ini akan memutar balik deployment yang sedang live begitu script dijalankan.
 
 ### Verifikasi lewat script read-only, bukan script yang ikut membangun
 
