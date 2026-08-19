@@ -1,17 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Commit tervalidasi tiap repo aplikasi, dicatat saat orkestrasi ini terakhir
-# terbukti bekerja penuh: artikel dibuat lewat panel admin, tampil di situs
-# publik beserta gambarnya. Kalau salah satu sibling repo maju melewati
-# commit ini, build berikutnya bisa memakai kode yang belum pernah diverifikasi
-# bersama commit di repo ini.
+# Commit tervalidasi tiap repo aplikasi, dicatat saat orkestrasi ini terakhir terbukti bekerja penuh: 
+# artikel dibuat lewat panel admin, tampil di situs publik beserta gambarnya. 
+# Kalau salah satu sibling repo maju melewati commit ini, 
+# build berikutnya bisa memakai kode yang belum pernah diverifikasi bersama commit di repo ini.
 #
-# laravel-swagger-roles sengaja TIDAK ada di daftar ini. Direktori itu
-# sekarang dikelola live oleh CD (.github/workflows/deploy.yml di repo
+# laravel-swagger-roles sengaja TIDAK ada di daftar ini. 
+# Direktori itu sekarang dikelola live oleh CD (.github/workflows/deploy.yml di repo
 # tersebut men-checkout main + pull di direktori yang sama tiap merge).
 # Memin-nya ke SHA lama di sini akan memutar balik deployment yang sedang
-# live begitu script ini dijalankan lagi. Lihat CD.md.
+# live begitu script ini dijalankan lagi.
 declare -A PINNED=(
   [react-tailwind-roles]=a4c5cb2
   [nextjs-tailwind-storybook]=4aa600d

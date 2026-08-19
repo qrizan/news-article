@@ -1,14 +1,12 @@
 # Security - News Article
 
-Dokumen ini menjelaskan mekanisme keamanan yang terimplementasi di sistem "News Article": empat repo (orkestrasi ini + `laravel-swagger-roles`, `react-tailwind-roles`, `nextjs-tailwind-storybook`), masing-masing punya pipeline CI security sendiri di GitHub Actions.
-
-Dokumen ini merangkum bentuk mekanismenya, ditujukan untuk pembaca yang belum punya konteks proyek.
+Mekanisme keamanan yang terimplementasi di sistem "News Article": empat repo (orkestrasi ini + `laravel-swagger-roles`, `react-tailwind-roles`, `nextjs-tailwind-storybook`), masing-masing punya pipeline CI security sendiri di GitHub Actions.
 
 ---
 
 ## 1. Design constraints
 
-**Tidak ada deployment cloud/VPS.** Pipeline berhenti di `build + test + security scan`, tidak ada stage CD.
+**Tidak ada deployment cloud/VPS.** Pipeline security yang dijelaskan di dokumen ini berhenti di `build + test + security scan`, tidak ada stage deploy. CD berjalan sebagai workflow terpisah, di luar cakupan dokumen ini, saat ini hanya untuk `laravel-swagger-roles`, lihat [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## 2. Scanning layers
 
